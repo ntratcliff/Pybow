@@ -24,8 +24,13 @@ def vm_print(addr, addr2):
 #Takes input starting at addr and sets
 #addr2 to the address of the cell at
 #the end of the input stream
-#def vm_in(addr, addr2):
-	#TODO
+def vm_in(addr, addr2):
+	inp = input()
+	i = 0
+	for c in inp:
+		mem[addr] = ord(c)
+		i+=1
+	mem[addr2] = addr + i	
 
 #Sets a label of val for lookback or
 #lookahead instructions
@@ -67,7 +72,7 @@ insmap = {
 	'0': vm_exit,
 	'1': vm_set,
 	'2': vm_print,
-#	'3': vm_in,
+	'3': vm_in,
 #	'5': vm_label,
 #	'6': vm_lookback,
 #	'7': vm_lookahead,
@@ -100,7 +105,7 @@ for statement in statements:
 	#if switch is 1, get value at address val
 	#exclusion of ins '1' and '2' is a temporary
 	#workaround pending update to the Rainbow spec
-	if switch == '1' and ins != '1' and ins != '2':
+	if switch == '1' and ins != '2' and ins != '3':
 		val = mem[val]
 	
 	#execute instruction at ins
