@@ -2,6 +2,8 @@ import sys
 from PIL import Image
 
 mem = bytearray(256) #256 cell memory tape
+statements = [] #statements in image
+currStatement = 0 #current statement index
 
 def rgb2hex(r, g, b):
 	return '{:02x}{:02x}{:02x}'.format(r,g,b)
@@ -18,8 +20,9 @@ def vm_set(addr, val):
 #Sequentially prints the values of each
 #cell from addr to addr2 inclusively
 def vm_print(addr, addr2): 
-	for i in range(addr,addr2):
-		print(chr(mem[i]), end="")
+	for i in range(addr,addr2+1):
+#		print(chr(mem[i]), end="")
+		print(mem[i], end="")
 
 #Takes input starting at addr and sets
 #addr2 to the address of the cell at
@@ -28,24 +31,46 @@ def vm_in(addr, addr2):
 	inp = input()
 	i = 0
 	for c in inp:
-		mem[addr] = ord(c)
+#		mem[addr] = ord(c)
+		mem[addr] = int(c)
 		i+=1
 	mem[addr2] = addr + i	
 
 #Sets a label of val for lookback or
 #lookahead instructions
-#def vm_label(addr, val):
-	#TODO
+#empty 
+def vm_label(addr, val):
+	return
+
+#Checks if the value of a label statement
+#is the same as val
+def vm_evallabel(statement, val):
+	if statement[0] == '5':
+		lswitch = statement[3]
+		lval = int(statement[4:6], 16)
+		if lswitch == '1':
+			lval = mem[lval]
+		if lval == val:
+			return True
+	return False
 
 #Searches backwards and resumes execution
 #at the first label with value val (lazy)
-#def vm_lookback(addr, val):
-	#TODO
+def vm_lookback(addr, val):
+	global currStatement	
+	while currStatement > 0:
+		currStatement -= 1
+		if vm_evallabel(statements[currStatement], val):
+			return
 
 #Searches forwards and resumes execution
 #at the first label with value val (lazy)
-#def vm_lookahead(addr, val):
-	#TODO
+def vm_lookahead(addr, val):
+	global currStatement
+	while currStatement < len(statements):
+		currStatement += 1
+		if vm_evallabel(statements[currStatement], val):
+			return
 
 #Adds val to the value at addr
 def vm_add(addr, val):
@@ -73,9 +98,9 @@ insmap = {
 	'1': vm_set,
 	'2': vm_print,
 	'3': vm_in,
-#	'5': vm_label,
-#	'6': vm_lookback,
-#	'7': vm_lookahead,
+	'5': vm_label,
+	'6': vm_lookback,
+	'7': vm_lookahead,
 	'a': vm_add,
 	'b': vm_sub,
 	'c': vm_mul,
@@ -90,24 +115,24 @@ else:
 
 img = Image.open(imgPath)
 
-statements = []
 
 for r, g, b in list(img.getdata()):
 	statements.append(rgb2hex(r, g, b))
 
-
-for statement in statements:
+while currStatement < len(statements):
+	statement = statements[currStatement]
 	ins = statement[0]
-	addr = int(statement[1:3], 16)
+	addr = int(statement[1:3], 16)	
 	switch = statement[3]
 	val = int(statement[4:6], 16)
-
+	
 	#if switch is 1, get value at address val
 	#exclusion of ins '1' and '2' is a temporary
 	#workaround pending update to the Rainbow spec
 	if switch == '1' and ins != '2' and ins != '3':
 		val = mem[val]
 	
-	#execute instruction at ins
 	if ins in insmap:
 		insmap[ins](addr, val)
+
+	currStatement+=1
