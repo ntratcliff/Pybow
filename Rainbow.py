@@ -4,6 +4,7 @@ from PIL import Image
 mem = bytearray(256) #256 cell memory tape
 statements = [] #statements in image
 currStatement = 0 #current statement index
+ioMode = "-a"
 
 def rgb2hex(r, g, b):
 	return '{:02x}{:02x}{:02x}'.format(r,g,b)
@@ -21,8 +22,12 @@ def vm_set(addr, val):
 #cell from addr to addr2 inclusively
 def vm_print(addr, addr2): 
 	for i in range(addr,addr2+1):
-#		print(chr(mem[i]), end="")
-		print(mem[i], end="")
+		if ioMode == "-d":
+			print(mem[i], end="")
+		elif ioMode == "-h":
+			print(format(mem[i], "x"), end="")
+		else:
+			print(chr(mem[i]), end="")
 
 #Takes input starting at addr and sets
 #addr2 to the address of the cell at
@@ -30,10 +35,12 @@ def vm_print(addr, addr2):
 def vm_in(addr, addr2):
 	inp = input()
 	i = 0
-	for c in inp:
-#		mem[addr] = ord(c)
-		mem[addr] = int(c)
-		i+=1
+	if ioMode == "-d" or ioMode == "-h":
+		mem[addr] = int(inp)
+	else:
+		for c in inp:
+			mem[addr+i] = ord(c)
+			i+=1
 	mem[addr2] = addr + i	
 
 #Sets a label of val for lookback or
@@ -108,13 +115,16 @@ insmap = {
 	'e': vm_mod,
 }
 
-if len(sys.argv) > 1:
-	imgPath = sys.argv[1]
-else: 
-	sys.exit(1)
+if len(sys.argv) <= 1:
+	sys.exit()
+
+for arg in sys.argv:
+	if arg[0] == "-":
+		ioMode = arg
+	else:
+		imgPath = arg
 
 img = Image.open(imgPath)
-
 
 for r, g, b in list(img.getdata()):
 	statements.append(rgb2hex(r, g, b))
